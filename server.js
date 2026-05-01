@@ -6,6 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const UserAgent = require('user-agents');
 const WebSocket = require('ws');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -13,6 +15,22 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
 const PORT = process.env.PORT || 3000;
+const LOG_FILE = path.join(__dirname, 'bot_logs.txt');
+
+const logToFile = (message) => {
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] ${message}\n`;
+  fs.appendFileSync(LOG_FILE, logEntry);
+  console.log(logEntry.trim());
+};
+
+const logError = (context, error) => {
+  const errorDetails = error.response ? 
+    `Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}` : 
+    error.message;
+  logToFile(`ERROR [${context}]: ${errorDetails}`);
+  return errorDetails;
+};
 
 app.use(helmet());
 app.use(cors());
@@ -64,42 +82,64 @@ const getHeaders = (cookie, csrfToken = '') => {
 };
 
 const validateCookie = async (cookie) => {
+  logToFile(`STEP 1: Starting cookie validation (length: ${cookie.length})`);
+  
   try {
     const headers = getHeaders(cookie);
+    logToFile('STEP 2: Sending initial auth request to roblox.com/v1/user/passwords');
+    
     const response = await axios.get('https://auth.roblox.com/v1/user/passwords', {
       headers,
       validateStatus: (status) => status === 200 || status === 403,
-      timeout: 10000
+      timeout: 15000
     });
+    
+    logToFile(`STEP 3: Initial response status: ${response.status}`);
     
     if (response.status === 403) {
       const csrfToken = response.headers['x-csrf-token'];
-      if (!csrfToken) return { valid: false, error: 'No CSRF token received' };
+      logToFile(`STEP 4: Got CSRF token: ${csrfToken ? 'YES' : 'NO'}`);
+      
+      if (!csrfToken) {
+        logToFile('STEP 4-FAIL: No CSRF token in 403 response headers');
+        return { valid: false, error: 'No CSRF token received from Roblox' };
+      }
       
       headers['X-CSRF-TOKEN'] = csrfToken;
+      logToFile('STEP 5: Sending authenticated user verification request');
       
       const verifyResponse = await axios.get('https://users.roblox.com/v1/users/authenticated', {
         headers,
         validateStatus: (status) => status === 200 || status === 401,
-        timeout: 10000
+        timeout: 15000
       });
       
+      logToFile(`STEP 6: Verification response status: ${verifyResponse.status}`);
+      
       if (verifyResponse.status === 200) {
+        logToFile(`STEP 7: SUCCESS - Authenticated as ${verifyResponse.data.name} (ID: ${verifyResponse.data.id})`);
         return { 
           valid: true, 
           csrfToken, 
           user: verifyResponse.data 
         };
       }
+      
+      logToFile('STEP 7-FAIL: Verification returned non-200 status');
+      return { valid: false, error: 'Cookie verification failed (401/403)' };
     }
     
-    return { valid: false, error: 'Invalid or expired cookie' };
+    logToFile('STEP 3-FAIL: Initial response was not 403, unexpected behavior');
+    return { valid: false, error: 'Unexpected auth response from Roblox' };
   } catch (error) {
-    return { valid: false, error: error.message };
+    logError('Cookie Validation', error);
+    return { valid: false, error: `Network/Request Error: ${error.message}` };
   }
 };
 
 const extractPlaceId = (link) => {
+  logToFile(`PARSING: Extracting Place ID from link: ${link.substring(0, 60)}...`);
+  
   const patterns = [
     /games\/(\d+)\//,
     /place\?id=(\d+)/,
@@ -109,58 +149,91 @@ const extractPlaceId = (link) => {
   
   for (const pattern of patterns) {
     const match = link.match(pattern);
-    if (match) return match[1];
+    if (match) {
+      logToFile(`PARSING: Found Place ID: ${match[1]}`);
+      return match[1];
+    }
   }
+  
+  logToFile('PARSING-FAIL: No Place ID pattern matched');
   return null;
 };
 
 const extractAccessCode = (link) => {
   const match = link.match(/privateServerLinkCode=([a-zA-Z0-9-]+)/);
-  return match ? match[1] : null;
+  const code = match ? match[1] : null;
+  logToFile(`PARSING: Access code ${code ? 'found' : 'NOT found'}`);
+  return code;
 };
 
 const getGameTicket = async (cookie, csrfToken) => {
-  const headers = getHeaders(cookie, csrfToken);
+  logToFile('TICKET: Requesting authentication ticket...');
   
-  const ticketResponse = await axios.post(
-    'https://auth.roblox.com/v1/authentication-ticket',
-    {},
-    {
-      headers,
-      validateStatus: (status) => status === 200 || status === 403,
-      timeout: 15000
-    }
-  );
-  
-  if (ticketResponse.status === 403) {
-    const newCsrf = ticketResponse.headers['x-csrf-token'];
-    headers['X-CSRF-TOKEN'] = newCsrf;
+  try {
+    const headers = getHeaders(cookie, csrfToken);
     
-    const retry = await axios.post(
+    const ticketResponse = await axios.post(
       'https://auth.roblox.com/v1/authentication-ticket',
       {},
-      { headers, timeout: 15000 }
+      {
+        headers,
+        validateStatus: (status) => status === 200 || status === 403,
+        timeout: 15000
+      }
     );
     
-    return { ticket: retry.headers['rbx-authentication-ticket'], csrfToken: newCsrf };
+    logToFile(`TICKET: Response status ${ticketResponse.status}`);
+    
+    if (ticketResponse.status === 403) {
+      const newCsrf = ticketResponse.headers['x-csrf-token'];
+      logToFile(`TICKET: Got new CSRF token, retrying...`);
+      
+      headers['X-CSRF-TOKEN'] = newCsrf;
+      
+      const retry = await axios.post(
+        'https://auth.roblox.com/v1/authentication-ticket',
+        {},
+        { headers, timeout: 15000 }
+      );
+      
+      const ticket = retry.headers['rbx-authentication-ticket'];
+      logToFile(`TICKET: Retry success, ticket ${ticket ? 'received' : 'MISSING'}`);
+      
+      return { ticket, csrfToken: newCsrf };
+    }
+    
+    const ticket = ticketResponse.headers['rbx-authentication-ticket'];
+    logToFile(`TICKET: First attempt success, ticket ${ticket ? 'received' : 'MISSING'}`);
+    
+    return { ticket, csrfToken };
+  } catch (error) {
+    logError('Get Game Ticket', error);
+    throw error;
   }
-  
-  return { 
-    ticket: ticketResponse.headers['rbx-authentication-ticket'], 
-    csrfToken 
-  };
 };
 
 const getGameDetails = async (placeId, cookie, csrfToken) => {
-  const headers = getHeaders(cookie, csrfToken);
-  const response = await axios.get(
-    `https://games.roblox.com/v1/games/multiget-place-details?placeIds=${placeId}`,
-    { headers, timeout: 10000 }
-  );
-  return response.data[0];
+  logToFile(`GAME: Fetching details for Place ID ${placeId}`);
+  
+  try {
+    const headers = getHeaders(cookie, csrfToken);
+    const response = await axios.get(
+      `https://games.roblox.com/v1/games/multiget-place-details?placeIds=${placeId}`,
+      { headers, timeout: 15000 }
+    );
+    
+    const details = response.data[0];
+    logToFile(`GAME: Found "${details.name}" (Universe: ${details.universeId})`);
+    return details;
+  } catch (error) {
+    logError('Get Game Details', error);
+    throw error;
+  }
 };
 
-const maintainPresence = async (botId, cookie, csrfToken, placeId, accessCode, ws) => {
+const maintainPresence = (botId, cookie, csrfToken, placeId, accessCode, ws) => {
+  logToFile(`PRESENCE: Starting heartbeat every 30 seconds`);
+  
   const presenceInterval = setInterval(async () => {
     try {
       const headers = getHeaders(cookie, csrfToken);
@@ -176,13 +249,16 @@ const maintainPresence = async (botId, cookie, csrfToken, placeId, accessCode, w
       
       ws.send(JSON.stringify({
         type: 'presence',
-        message: 'Maintaining game presence',
+        message: 'Heartbeat: Bot active in game',
         timestamp: new Date().toISOString()
       }));
     } catch (error) {
+      const errMsg = error.response?.data?.errors?.[0]?.message || error.message;
+      logToFile(`PRESENCE-ERROR: ${errMsg}`);
+      
       ws.send(JSON.stringify({
         type: 'error',
-        message: `Presence error: ${error.message}`,
+        message: `Presence heartbeat failed: ${errMsg}`,
         timestamp: new Date().toISOString()
       }));
     }
@@ -192,53 +268,67 @@ const maintainPresence = async (botId, cookie, csrfToken, placeId, accessCode, w
 };
 
 const startBot = async (botId, cookie, privateServerLink, ws) => {
+  logToFile(`========== BOT START: ${botId} ==========`);
+  
   try {
-    ws.send(JSON.stringify({ type: 'status', message: 'Validating cookie format...' }));
+    ws.send(JSON.stringify({ type: 'status', message: '[1/6] Validating cookie format...' }));
     
     if (!cookie || cookie.length < 100) {
-      ws.send(JSON.stringify({ type: 'error', message: 'Cookie too short or missing' }));
+      const err = 'Cookie too short or empty';
+      logToFile(`VALIDATION-FAIL: ${err}`);
+      ws.send(JSON.stringify({ type: 'error', message: err }));
       return;
     }
 
-    ws.send(JSON.stringify({ type: 'status', message: 'Authenticating with Roblox...' }));
-    
+    ws.send(JSON.stringify({ type: 'status', message: '[2/6] Authenticating with Roblox API...' }));
     const validation = await validateCookie(cookie);
+    
     if (!validation.valid) {
-      ws.send(JSON.stringify({ type: 'error', message: validation.error }));
+      logToFile(`AUTH-FAIL: ${validation.error}`);
+      ws.send(JSON.stringify({ type: 'error', message: `Auth failed: ${validation.error}` }));
       return;
     }
 
     ws.send(JSON.stringify({ 
       type: 'status', 
-      message: `Authenticated as ${validation.user.name}` 
+      message: `[3/6] Logged in as ${validation.user.name}` 
     }));
 
     const placeId = extractPlaceId(privateServerLink);
     if (!placeId) {
-      ws.send(JSON.stringify({ type: 'error', message: 'Could not extract Place ID from link' }));
+      const err = 'Could not extract Place ID from private server link';
+      logToFile(`PARSE-FAIL: ${err}`);
+      ws.send(JSON.stringify({ type: 'error', message: err }));
       return;
     }
 
-    ws.send(JSON.stringify({ type: 'status', message: `Place ID: ${placeId}` }));
+    ws.send(JSON.stringify({ type: 'status', message: `[4/6] Place ID: ${placeId}` }));
 
     const accessCode = extractAccessCode(privateServerLink);
     const gameDetails = await getGameDetails(placeId, cookie, validation.csrfToken);
 
     ws.send(JSON.stringify({ 
       type: 'status', 
-      message: `Target: ${gameDetails.name}` 
+      message: `[5/6] Target: ${gameDetails.name}` 
     }));
 
-    ws.send(JSON.stringify({ type: 'status', message: 'Generating auth ticket...' }));
+    ws.send(JSON.stringify({ type: 'status', message: '[6/6] Generating auth ticket & joining...' }));
     
     const ticketData = await getGameTicket(cookie, validation.csrfToken);
     
-    ws.send(JSON.stringify({ type: 'status', message: 'Joining private server...' }));
+    if (!ticketData.ticket) {
+      const err = 'Failed to obtain authentication ticket';
+      logToFile(`TICKET-FAIL: ${err}`);
+      ws.send(JSON.stringify({ type: 'error', message: err }));
+      return;
+    }
 
     const joinHeaders = getHeaders(cookie, ticketData.csrfToken);
     joinHeaders['RBX-Authentication-Ticket'] = ticketData.ticket;
     joinHeaders['Referer'] = privateServerLink;
 
+    logToFile('JOIN: Sending join request to gamejoin.roblox.com');
+    
     const joinResponse = await axios.post(
       'https://gamejoin.roblox.com/v1/join-game-instance',
       {
@@ -254,8 +344,12 @@ const startBot = async (botId, cookie, privateServerLink, ws) => {
       }
     );
 
+    logToFile(`JOIN: Response status ${joinResponse.status}`);
+
     if (joinResponse.status === 403) {
       const newCsrf = joinResponse.headers['x-csrf-token'];
+      logToFile('JOIN: 403 received, retrying with new CSRF...');
+      
       joinHeaders['X-CSRF-TOKEN'] = newCsrf;
       
       const retryJoin = await axios.post(
@@ -269,53 +363,68 @@ const startBot = async (botId, cookie, privateServerLink, ws) => {
         { headers: joinHeaders, timeout: 20000 }
       );
       
+      logToFile(`JOIN-RETRY: Success! Status ${retryJoin.status}`);
+      
       ws.send(JSON.stringify({ 
         type: 'success', 
-        message: 'Bot joined successfully',
+        message: 'Bot joined and staying in server',
         data: retryJoin.data
       }));
     } else {
+      logToFile(`JOIN: Success on first attempt`);
+      
       ws.send(JSON.stringify({ 
         type: 'success', 
-        message: 'Bot joined successfully',
+        message: 'Bot joined and staying in server',
         data: joinResponse.data
       }));
     }
 
-    ws.send(JSON.stringify({ type: 'status', message: 'Starting presence heartbeat...' }));
+    ws.send(JSON.stringify({ type: 'status', message: 'Starting presence heartbeat (30s intervals)...' }));
     
     maintainPresence(botId, cookie, ticketData.csrfToken, placeId, accessCode, ws);
 
     activeBots.get(botId).status = 'active';
     activeBots.get(botId).user = validation.user;
     activeBots.get(botId).game = gameDetails;
+    
+    logToFile(`========== BOT ACTIVE: ${botId} ==========`);
 
   } catch (error) {
+    const errMsg = error.response?.data?.errors?.[0]?.message || error.message;
+    logToFile(`CRITICAL-ERROR: ${errMsg}`);
     ws.send(JSON.stringify({ 
       type: 'error', 
-      message: error.response?.data?.errors?.[0]?.message || error.message 
+      message: `Critical error: ${errMsg}` 
     }));
   }
 };
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
   const botId = uuidv4();
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  
+  logToFile(`WS-CONNECT: Client ${ip} connected, assigned ${botId}`);
   
   activeBots.set(botId, {
     ws,
     status: 'initializing',
     intervals: [],
     user: null,
-    game: null
+    game: null,
+    ip
   });
 
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
+      logToFile(`WS-MESSAGE: ${botId} sent action="${data.action}"`);
       
       if (data.action === 'start') {
         if (!data.cookie || !data.privateServerLink) {
-          ws.send(JSON.stringify({ type: 'error', message: 'Missing cookie or private server link' }));
+          const err = 'Missing cookie or private server link in message';
+          logToFile(`START-FAIL: ${err}`);
+          ws.send(JSON.stringify({ type: 'error', message: err }));
           return;
         }
         
@@ -324,6 +433,7 @@ wss.on('connection', (ws) => {
       }
       
       if (data.action === 'leave') {
+        logToFile(`LEAVE: ${botId} requested disconnect`);
         const bot = activeBots.get(botId);
         if (bot) {
           bot.intervals.forEach(clearInterval);
@@ -338,15 +448,18 @@ wss.on('connection', (ws) => {
           setTimeout(() => {
             ws.close();
             activeBots.delete(botId);
+            logToFile(`LEAVE: ${botId} cleaned up`);
           }, 1000);
         }
       }
     } catch (error) {
-      ws.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
+      logToFile(`WS-ERROR: ${botId} - ${error.message}`);
+      ws.send(JSON.stringify({ type: 'error', message: `Invalid message: ${error.message}` }));
     }
   });
 
-  ws.on('close', () => {
+  ws.on('close', (code, reason) => {
+    logToFile(`WS-CLOSE: ${botId} closed (code: ${code}, reason: ${reason || 'none'})`);
     const bot = activeBots.get(botId);
     if (bot) {
       bot.intervals.forEach(clearInterval);
@@ -354,10 +467,14 @@ wss.on('connection', (ws) => {
     }
   });
 
+  ws.on('error', (error) => {
+    logToFile(`WS-ERROR: ${botId} - ${error.message}`);
+  });
+
   ws.send(JSON.stringify({ 
     type: 'connected', 
     botId,
-    message: 'Connected. Ready to initialize.' 
+    message: 'Connected to server. Ready to initialize.' 
   }));
 });
 
@@ -369,7 +486,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/api/logs', (req, res) => {
+  try {
+    const logs = fs.readFileSync(LOG_FILE, 'utf8');
+    res.type('text/plain').send(logs);
+  } catch {
+    res.status(404).send('No logs available yet');
+  }
+});
+
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`WebSocket: ws://localhost:${PORT}/ws`);
+  logToFile(`SERVER-START: Running on port ${PORT}`);
+  logToFile(`SERVER-START: WebSocket endpoint ws://localhost:${PORT}/ws`);
+  logToFile(`SERVER-START: Logs endpoint http://localhost:${PORT}/api/logs`);
 });
