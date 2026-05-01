@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Cookie Bot | Railway Deploy</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #8892b0;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ccd6f6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .input-hint {
+            font-size: 12px;
+            color: #8892b0;
+            margin-top: 6px;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+        }
+        .status.error {
+            display: block;
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid rgba(255, 0, 85, 0.3);
+            color: #ff0055;
+        }
+        .status.loading {
+            display: block;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+        }
+        .log-output {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        .log-output.active {
+            display: block;
+        }
+        .log-line {
+            margin: 4px 0;
+            color: #8892b0;
+        }
+        .log-line.success { color: #00ff88; }
+        .log-line.error { color: #ff0055; }
+        .log-line.info { color: #00d4ff; }
+        
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .feature-tag {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            text-align: center;
+            color: #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Roblox Cookie Bot</h1>
+        <p class="subtitle">Advanced Authentication & Private Server Joiner</p>
+        
+        <div class="features">
+            <div class="feature-tag">CSRF Token Handling</div>
+            <div class="feature-tag">Super Properties</div>
+            <div class="feature-tag">User-Agent Rotation</div>
+            <div class="feature-tag">Railway Ready</div>
+        </div>
+
+        <form id="botForm">
+            <div class="form-group">
+                <label for="cookie">Roblox Cookie (.ROBLOSECURITY)</label>
+                <textarea 
+                    id="cookie" 
+                    placeholder="Paste your full .ROBLOSECURITY cookie here..."
+                    required
+                ></textarea>
+                <p class="input-hint">Must be valid, active session cookie (100+ chars)</p>
+            </div>
+
+            <div class="form-group">
+                <label for="privateServer">Private Server Link</label>
+                <input 
+                    type="url" 
+                    id="privateServer" 
+                    placeholder="https://www.roblox.com/games/123456789/GameName?privateServerLinkCode=..."
+                    required
+                >
+                <p class="input-hint">Full Roblox private server invitation URL</p>
+            </div>
+
+            <button type="submit" id="submitBtn">
+                Initialize Bot & Join Server
+            </button>
+        </form>
+
+        <div id="status" class="status"></div>
+        <div id="logs" class="log-output"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('botForm');
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function addLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(line);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function showStatus(message, type) {
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const cookie = document.getElementById('cookie').value.trim();
+            const privateServerLink = document.getElementById('privateServer').value.trim();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            logsDiv.classList.add('active');
+            logsDiv.innerHTML = '';
+            statusDiv.className = 'status';
+
+            addLog('Initializing bot sequence...', 'info');
+            addLog('Validating cookie format...', 'info');
+
+            try {
+                addLog('Sending authentication request to API...', 'info');
+                
+                const response = await fetch('/api/authenticate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        cookie,
+                        privateServerLink
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addLog(`Authenticated as: ${data.user.name} (ID: ${data.user.id})`, 'success');
+                    addLog(`Target game: ${data.game.name} (Place ID: ${data.game.placeId})`, 'info');
+                    addLog('Join request initiated successfully', 'success');
+                    addLog(`Server response: ${JSON.stringify(data.serverDetails, null, 2)}`, 'info');
+                    
+                    showStatus(
+                        `Success! Bot logged in as ${data.user.name} and joined ${data.game.name}`, 
+                        'success'
+                    );
+                } else {
+                    addLog(`Error: ${data.error}`, 'error');
+                    if (data.details) addLog(`Details: ${data.details}`, 'error');
+                    showStatus(data.error || 'Authentication failed', 'error');
+                }
+
+            } catch (error) {
+                addLog(`Network/Runtime Error: ${error.message}`, 'error');
+                showStatus('Connection failed. Check server status.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Initialize Bot & Join Server';
+            }
+        });
+    </script>
+</body>
+</html>
