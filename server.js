@@ -1,6 +1,5 @@
 const express = require('express');
 const axios = require('axios');
-const { body, validationResult } = require('express-validator');
 const helmet = require('helmet');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
@@ -120,7 +119,7 @@ const extractAccessCode = (link) => {
   return match ? match[1] : null;
 };
 
-const getGameTicket = async (placeId, cookie, csrfToken, accessCode) => {
+const getGameTicket = async (cookie, csrfToken) => {
   const headers = getHeaders(cookie, csrfToken);
   
   const ticketResponse = await axios.post(
@@ -177,7 +176,7 @@ const maintainPresence = async (botId, cookie, csrfToken, placeId, accessCode, w
       
       ws.send(JSON.stringify({
         type: 'presence',
-        message: 'Bot maintaining presence in game',
+        message: 'Maintaining game presence',
         timestamp: new Date().toISOString()
       }));
     } catch (error) {
@@ -194,7 +193,14 @@ const maintainPresence = async (botId, cookie, csrfToken, placeId, accessCode, w
 
 const startBot = async (botId, cookie, privateServerLink, ws) => {
   try {
-    ws.send(JSON.stringify({ type: 'status', message: 'Validating cookie...' }));
+    ws.send(JSON.stringify({ type: 'status', message: 'Validating cookie format...' }));
+    
+    if (!cookie || cookie.length < 100) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Cookie too short or missing' }));
+      return;
+    }
+
+    ws.send(JSON.stringify({ type: 'status', message: 'Authenticating with Roblox...' }));
     
     const validation = await validateCookie(cookie);
     if (!validation.valid) {
@@ -209,23 +215,23 @@ const startBot = async (botId, cookie, privateServerLink, ws) => {
 
     const placeId = extractPlaceId(privateServerLink);
     if (!placeId) {
-      ws.send(JSON.stringify({ type: 'error', message: 'Invalid private server link format' }));
+      ws.send(JSON.stringify({ type: 'error', message: 'Could not extract Place ID from link' }));
       return;
     }
 
-    ws.send(JSON.stringify({ type: 'status', message: `Target Place ID: ${placeId}` }));
+    ws.send(JSON.stringify({ type: 'status', message: `Place ID: ${placeId}` }));
 
     const accessCode = extractAccessCode(privateServerLink);
     const gameDetails = await getGameDetails(placeId, cookie, validation.csrfToken);
 
     ws.send(JSON.stringify({ 
       type: 'status', 
-      message: `Game: ${gameDetails.name}` 
+      message: `Target: ${gameDetails.name}` 
     }));
 
-    ws.send(JSON.stringify({ type: 'status', message: 'Requesting authentication ticket...' }));
+    ws.send(JSON.stringify({ type: 'status', message: 'Generating auth ticket...' }));
     
-    const ticketData = await getGameTicket(placeId, cookie, validation.csrfToken, accessCode);
+    const ticketData = await getGameTicket(cookie, validation.csrfToken);
     
     ws.send(JSON.stringify({ type: 'status', message: 'Joining private server...' }));
 
@@ -265,7 +271,7 @@ const startBot = async (botId, cookie, privateServerLink, ws) => {
       
       ws.send(JSON.stringify({ 
         type: 'success', 
-        message: 'Bot joined successfully (with CSRF retry)',
+        message: 'Bot joined successfully',
         data: retryJoin.data
       }));
     } else {
@@ -276,7 +282,7 @@ const startBot = async (botId, cookie, privateServerLink, ws) => {
       }));
     }
 
-    ws.send(JSON.stringify({ type: 'status', message: 'Starting presence maintenance...' }));
+    ws.send(JSON.stringify({ type: 'status', message: 'Starting presence heartbeat...' }));
     
     maintainPresence(botId, cookie, ticketData.csrfToken, placeId, accessCode, ws);
 
@@ -351,7 +357,7 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ 
     type: 'connected', 
     botId,
-    message: 'WebSocket connected. Ready to initialize bot.' 
+    message: 'Connected. Ready to initialize.' 
   }));
 });
 
@@ -364,6 +370,6 @@ app.get('/api/health', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Roblox Persistent Bot Server running on port ${PORT}`);
-  console.log(`WebSocket endpoint: ws://localhost:${PORT}/ws`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket: ws://localhost:${PORT}/ws`);
 });
