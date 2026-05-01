@@ -3,89 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox Persistent Bot | Railway Deploy</title>
+    <title>Roblox Bot Controller</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: #0f0f1a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0ff;
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            color: #e0e0ff;
+            align-items: flex-start;
+            padding: 40px 20px;
         }
-        .container {
-            background: #1a1a2e;
-            border: 1px solid #2a2a4a;
-            border-radius: 16px;
-            padding: 32px;
+        .main {
             width: 100%;
-            max-width: 600px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            max-width: 560px;
         }
-        h1 {
+        .header {
             text-align: center;
-            font-size: 24px;
-            margin-bottom: 4px;
+            margin-bottom: 28px;
+        }
+        .header h1 {
+            font-size: 26px;
             background: linear-gradient(90deg, #00d4ff, #b829dd);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
         }
-        .subtitle {
-            text-align: center;
+        .header p {
             color: #6b6b8d;
             font-size: 13px;
-            margin-bottom: 24px;
         }
-        .form-group {
-            margin-bottom: 20px;
+        .card {
+            background: #141428;
+            border: 1px solid #2a2a4a;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .input-group {
+            margin-bottom: 18px;
+        }
+        .input-group:last-child {
+            margin-bottom: 0;
         }
         label {
             display: block;
-            margin-bottom: 6px;
             font-size: 12px;
             font-weight: 600;
             color: #a0a0c0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 6px;
         }
         input, textarea {
             width: 100%;
             padding: 12px 14px;
-            background: #0f0f1a;
+            background: #0a0a0f;
             border: 2px solid #2a2a4a;
             border-radius: 10px;
             color: #e0e0ff;
             font-size: 14px;
-            transition: all 0.2s;
             font-family: 'SF Mono', Monaco, monospace;
+            transition: border-color 0.2s;
         }
         input:focus, textarea:focus {
             outline: none;
             border-color: #00d4ff;
         }
-        .input-error {
-            border-color: #ff3366 !important;
+        input.error, textarea.error {
+            border-color: #ff3366;
+            animation: shake 0.4s;
         }
-        .error-text {
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .error-msg {
             color: #ff3366;
             font-size: 12px;
             margin-top: 6px;
             display: none;
         }
-        .error-text.visible {
+        .error-msg.show {
             display: block;
         }
-        textarea {
-            min-height: 100px;
-            resize: vertical;
+        .hint {
+            color: #6b6b8d;
+            font-size: 12px;
+            margin-top: 6px;
         }
-        .btn-group {
+        .actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-top: 24px;
+            margin-top: 8px;
         }
         button {
             padding: 14px;
@@ -98,359 +112,381 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .btn-primary {
+        .btn-start {
             background: linear-gradient(135deg, #00d4ff, #0066ff);
             color: white;
         }
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.25);
         }
-        .btn-danger {
+        .btn-leave {
             background: linear-gradient(135deg, #ff3366, #cc0055);
             color: white;
         }
-        .btn-danger:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(255, 51, 102, 0.3);
+        .btn-leave:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 51, 102, 0.25);
         }
         button:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none !important;
         }
-        .status-panel {
-            margin-top: 20px;
-            padding: 16px;
-            border-radius: 10px;
-            background: #0f0f1a;
+        .console {
+            background: #0a0a0f;
             border: 1px solid #2a2a4a;
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            max-height: 320px;
+            overflow-y: auto;
             display: none;
         }
-        .status-panel.active {
+        .console.active {
             display: block;
         }
-        .status-header {
+        .console-line {
+            padding: 2px 0;
+            border-bottom: 1px solid #1a1a2e;
+            color: #8892b0;
+        }
+        .console-line.success { color: #00ff88; }
+        .console-line.error { color: #ff3366; }
+        .console-line.status { color: #ffaa00; }
+        .console-line.info { color: #00d4ff; }
+        .status-bar {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #0a0a0f;
+            border-radius: 10px;
             margin-bottom: 12px;
-            font-weight: 600;
+            display: none;
+        }
+        .status-bar.active {
+            display: flex;
         }
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: #444;
+            flex-shrink: 0;
         }
-        .status-dot.connected { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
-        .status-dot.error { background: #ff3366; box-shadow: 0 0 8px #ff3366; }
-        .status-dot.processing { background: #ffaa00; animation: pulse 1s infinite; }
-        @keyframes pulse {
+        .status-dot.green { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+        .status-dot.red { background: #ff3366; box-shadow: 0 0 6px #ff3366; }
+        .status-dot.yellow { background: #ffaa00; animation: blink 1s infinite; }
+        @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+            50% { opacity: 0.3; }
         }
-        .log-container {
-            max-height: 250px;
-            overflow-y: auto;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-size: 12px;
-            line-height: 1.6;
+        .status-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e0e0ff;
         }
-        .log-entry {
-            padding: 4px 0;
-            border-bottom: 1px solid #1a1a2e;
-            color: #8892b0;
-        }
-        .log-entry.success { color: #00ff88; }
-        .log-entry.error { color: #ff3366; }
-        .log-entry.info { color: #00d4ff; }
-        .log-entry.status { color: #ffaa00; }
-        .bot-info {
+        .bot-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .bot-stats.active {
+            display: grid;
+        }
+        .stat-box {
+            background: #0a0a0f;
             padding: 12px;
-            background: #0f0f1a;
             border-radius: 8px;
         }
-        .info-item {
-            font-size: 12px;
-        }
-        .info-label {
-            color: #6b6b8d;
-            margin-bottom: 2px;
-        }
-        .info-value {
-            color: #e0e0ff;
-            font-weight: 600;
-        }
-        .features {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .feature-tag {
-            background: rgba(0, 212, 255, 0.08);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            padding: 4px 10px;
-            border-radius: 20px;
+        .stat-label {
             font-size: 11px;
-            color: #00d4ff;
+            color: #6b6b8d;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #e0e0ff;
+            word-break: break-all;
+        }
+        .connection-status {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .conn-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3366;
+        }
+        .conn-dot.online {
+            background: #00ff88;
+            box-shadow: 0 0 4px #00ff88;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Roblox Persistent Bot</h1>
-        <p class="subtitle">WebSocket Presence | Manual Leave Control | Railway Ready</p>
-        
-        <div class="features">
-            <div class="feature-tag">Real-time Validation</div>
-            <div class="feature-tag">WebSocket Presence</div>
-            <div class="feature-tag">Stay Until Leave</div>
-            <div class="feature-tag">CSRF Auto-Retry</div>
+    <div class="main">
+        <div class="connection-status" id="connStatus">
+            <div class="conn-dot" id="connDot"></div>
+            <span id="connText">Disconnected</span>
         </div>
 
-        <form id="botForm" novalidate>
-            <div class="form-group">
-                <label for="cookie">Roblox Cookie (.ROBLOSECURITY)</label>
-                <textarea 
-                    id="cookie" 
-                    placeholder="Paste your .ROBLOSECURITY cookie here (min 100 chars)..."
-                ></textarea>
-                <div class="error-text" id="cookieError">Cookie must be at least 100 characters and contain valid base64 format</div>
+        <div class="header">
+            <h1>Roblox Bot Controller</h1>
+            <p>WebSocket Control | No Refresh | Persistent Presence</p>
+        </div>
+
+        <div class="card">
+            <div class="input-group">
+                <label for="cookie">Cookie (.ROBLOSECURITY)</label>
+                <textarea id="cookie" rows="4" placeholder="Paste cookie here..."></textarea>
+                <div class="error-msg" id="cookieErr">Invalid: Must be 100+ characters, base64 format</div>
+                <div class="hint">Min 100 chars, alphanumeric + / = only</div>
             </div>
 
-            <div class="form-group">
-                <label for="privateServer">Private Server Link</label>
-                <input 
-                    type="url" 
-                    id="privateServer" 
-                    placeholder="https://www.roblox.com/games/123456789/...?privateServerLinkCode=..."
-                >
-                <div class="error-text" id="linkError">Must be a valid Roblox private server URL</div>
+            <div class="input-group">
+                <label for="psLink">Private Server Link</label>
+                <input type="text" id="psLink" placeholder="https://www.roblox.com/games/...?privateServerLinkCode=...">
+                <div class="error-msg" id="linkErr">Invalid: Must be roblox.com URL with privateServerLinkCode</div>
+                <div class="hint">Full Roblox private server invitation URL</div>
             </div>
 
-            <div class="btn-group">
-                <button type="submit" class="btn-primary" id="startBtn">
-                    Initialize & Join
-                </button>
-                <button type="button" class="btn-danger" id="leaveBtn" disabled>
-                    Leave Server
-                </button>
+            <div class="actions">
+                <button class="btn-start" id="startBtn" onclick="handleStart()">Initialize & Join</button>
+                <button class="btn-leave" id="leaveBtn" onclick="handleLeave()" disabled>Leave Server</button>
             </div>
-        </form>
+        </div>
 
-        <div class="status-panel" id="statusPanel">
-            <div class="status-header">
+        <div class="card" id="statusCard" style="display:none;">
+            <div class="status-bar" id="statusBar">
                 <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Disconnected</span>
+                <div class="status-text" id="statusText">Ready</div>
             </div>
-            <div class="bot-info" id="botInfo" style="display:none;">
-                <div class="info-item">
-                    <div class="info-label">User</div>
-                    <div class="info-value" id="userName">-</div>
+
+            <div class="bot-stats" id="botStats">
+                <div class="stat-box">
+                    <div class="stat-label">User</div>
+                    <div class="stat-value" id="statUser">-</div>
                 </div>
-                <div class="info-item">
-                    <div class="info-label">Game</div>
-                    <div class="info-value" id="gameName">-</div>
+                <div class="stat-box">
+                    <div class="stat-label">Game</div>
+                    <div class="stat-value" id="statGame">-</div>
                 </div>
             </div>
-            <div class="log-container" id="logs"></div>
+
+            <div class="console" id="console"></div>
         </div>
     </div>
 
     <script>
-        const form = document.getElementById('botForm');
-        const cookieInput = document.getElementById('cookie');
-        const linkInput = document.getElementById('privateServer');
-        const cookieError = document.getElementById('cookieError');
-        const linkError = document.getElementById('linkError');
-        const startBtn = document.getElementById('startBtn');
-        const leaveBtn = document.getElementById('leaveBtn');
-        const statusPanel = document.getElementById('statusPanel');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const logs = document.getElementById('logs');
-        const botInfo = document.getElementById('botInfo');
-        const userNameEl = document.getElementById('userName');
-        const gameNameEl = document.getElementById('gameName');
-
         let ws = null;
-        let isBotActive = false;
+        let isRunning = false;
 
-        function validateCookie(value) {
-            const trimmed = value.trim();
-            return trimmed.length >= 100 && /^[A-Za-z0-9+/=]+$/.test(trimmed);
-        }
+        const $ = id => document.getElementById(id);
+        const cookieInput = $('cookie');
+        const psInput = $('psLink');
+        const startBtn = $('startBtn');
+        const leaveBtn = $('leaveBtn');
+        const statusCard = $('statusCard');
+        const statusBar = $('statusBar');
+        const statusDot = $('statusDot');
+        const statusText = $('statusText');
+        const botStats = $('botStats');
+        const statUser = $('statUser');
+        const statGame = $('statGame');
+        const consoleEl = $('console');
+        const connDot = $('connDot');
+        const connText = $('connText');
 
-        function validateLink(value) {
-            const trimmed = value.trim();
-            try {
-                const url = new URL(trimmed);
-                return url.hostname.includes('roblox.com') && 
-                       (trimmed.includes('privateServer') || trimmed.includes('privateServerLinkCode'));
-            } catch {
-                return false;
-            }
-        }
-
-        function showFieldError(input, errorEl, show) {
-            if (show) {
-                input.classList.add('input-error');
-                errorEl.classList.add('visible');
+        function validate() {
+            let ok = true;
+            
+            const cookie = cookieInput.value.trim();
+            if (!cookie || cookie.length < 100 || !/^[A-Za-z0-9+/=]+$/.test(cookie)) {
+                cookieInput.classList.add('error');
+                $('cookieErr').classList.add('show');
+                ok = false;
             } else {
-                input.classList.remove('input-error');
-                errorEl.classList.remove('visible');
+                cookieInput.classList.remove('error');
+                $('cookieErr').classList.remove('show');
             }
-        }
 
-        function addLog(message, type = 'info') {
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logs.appendChild(entry);
-            logs.scrollTop = logs.scrollHeight;
+            const link = psInput.value.trim();
+            try {
+                const url = new URL(link);
+                if (!url.hostname.includes('roblox.com') || !link.includes('privateServer')) {
+                    throw new Error();
+                }
+                psInput.classList.remove('error');
+                $('linkErr').classList.remove('show');
+            } catch {
+                psInput.classList.add('error');
+                $('linkErr').classList.add('show');
+                ok = false;
+            }
+
+            return ok ? { cookie, link } : null;
         }
 
         function setStatus(state, text) {
+            statusBar.classList.add('active');
             statusDot.className = 'status-dot ' + state;
             statusText.textContent = text;
-            statusPanel.classList.add('active');
+            statusCard.style.display = 'block';
         }
 
-        function connectWebSocket() {
+        function log(msg, type = 'info') {
+            consoleEl.classList.add('active');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function connectWS() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
             ws.onopen = () => {
-                setStatus('connected', 'WebSocket Connected');
-                addLog('WebSocket connection established', 'success');
+                connDot.classList.add('online');
+                connText.textContent = 'WebSocket Online';
+                log('WebSocket connected', 'success');
             };
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
                 
                 switch(data.type) {
                     case 'connected':
-                        addLog(`Bot ID assigned: ${data.botId}`, 'info');
+                        log(`Session ID: ${data.botId}`, 'info');
                         break;
                     case 'status':
-                        setStatus('processing', data.message);
-                        addLog(data.message, 'status');
-                        break;
-                    case 'success':
-                        setStatus('connected', 'Bot Active in Game');
-                        addLog(data.message, 'success');
-                        if (data.data) {
-                            addLog(`Server response: ${JSON.stringify(data.data)}`, 'info');
+                        setStatus('yellow', data.message);
+                        log(data.message, 'status');
+                        if (data.message.includes('Authenticated as')) {
+                            const name = data.message.match(/as (.+)/)?.[1];
+                            if (name) {
+                                statUser.textContent = name;
+                                botStats.classList.add('active');
+                            }
+                        }
+                        if (data.message.includes('Target:')) {
+                            const game = data.message.match(/Target: (.+)/)?.[1];
+                            if (game) {
+                                statGame.textContent = game;
+                            }
                         }
                         break;
+                    case 'success':
+                        setStatus('green', 'Bot Active in Game');
+                        log(data.message, 'success');
+                        isRunning = true;
+                        startBtn.disabled = true;
+                        startBtn.textContent = 'Running...';
+                        leaveBtn.disabled = false;
+                        break;
                     case 'error':
-                        setStatus('error', 'Error Occurred');
-                        addLog(data.message, 'error');
+                        setStatus('red', 'Error');
+                        log(data.message, 'error');
+                        startBtn.disabled = false;
+                        startBtn.textContent = 'Initialize & Join';
+                        leaveBtn.disabled = true;
                         break;
                     case 'presence':
-                        addLog(data.message, 'info');
+                        log(data.message, 'info');
                         break;
-                }
-
-                if (data.message && data.message.includes('Authenticated as')) {
-                    const match = data.message.match(/Authenticated as (.+)/);
-                    if (match) {
-                        userNameEl.textContent = match[1];
-                        botInfo.style.display = 'grid';
-                    }
-                }
-                
-                if (data.message && data.message.includes('Game:')) {
-                    const match = data.message.match(/Game: (.+)/);
-                    if (match) {
-                        gameNameEl.textContent = match[1];
-                    }
                 }
             };
 
-            ws.onerror = (error) => {
-                setStatus('error', 'Connection Error');
-                addLog('WebSocket error occurred', 'error');
+            ws.onerror = () => {
+                connDot.classList.remove('online');
+                connText.textContent = 'Connection Error';
+                log('WebSocket error', 'error');
             };
 
             ws.onclose = () => {
-                setStatus('error', 'Disconnected');
-                addLog('WebSocket connection closed', 'error');
-                isBotActive = false;
+                connDot.classList.remove('online');
+                connText.textContent = 'Disconnected';
+                log('WebSocket closed', 'error');
+                isRunning = false;
                 startBtn.disabled = false;
-                leaveBtn.disabled = true;
                 startBtn.textContent = 'Initialize & Join';
+                leaveBtn.disabled = true;
+                setStatus('red', 'Disconnected');
             };
         }
 
-        cookieInput.addEventListener('input', () => {
-            showFieldError(cookieInput, cookieError, false);
-        });
+        function handleStart() {
+            const data = validate();
+            if (!data) return;
 
-        linkInput.addEventListener('input', () => {
-            showFieldError(linkInput, linkError, false);
-        });
+            connectWS();
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const cookie = cookieInput.value.trim();
-            const link = linkInput.value.trim();
-            
-            let hasError = false;
-
-            if (!validateCookie(cookie)) {
-                showFieldError(cookieInput, cookieError, true);
-                hasError = true;
-            }
-
-            if (!validateLink(link)) {
-                showFieldError(linkInput, linkError, true);
-                hasError = true;
-            }
-
-            if (hasError) return;
-
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                connectWebSocket();
-            }
-
-            logs.innerHTML = '';
-            statusPanel.classList.add('active');
-            
             setTimeout(() => {
-                ws.send(JSON.stringify({
-                    action: 'start',
-                    cookie,
-                    privateServerLink: link
-                }));
-            }, 500);
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    consoleEl.innerHTML = '';
+                    statusCard.style.display = 'block';
+                    botStats.classList.remove('active');
+                    statUser.textContent = '-';
+                    statGame.textContent = '-';
+                    
+                    ws.send(JSON.stringify({
+                        action: 'start',
+                        cookie: data.cookie,
+                        privateServerLink: data.link
+                    }));
+                    
+                    startBtn.disabled = true;
+                    startBtn.textContent = 'Connecting...';
+                } else {
+                    log('WebSocket not ready. Retrying...', 'error');
+                    setTimeout(handleStart, 500);
+                }
+            }, 300);
+        }
 
-            isBotActive = true;
-            startBtn.disabled = true;
-            startBtn.textContent = 'Bot Running...';
-            leaveBtn.disabled = false;
-        });
-
-        leaveBtn.addEventListener('click', () => {
+        function handleLeave() {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ action: 'leave' }));
-                addLog('Sending leave command...', 'status');
+                log('Sending leave command...', 'status');
             }
             
-            isBotActive = false;
+            isRunning = false;
             startBtn.disabled = false;
             startBtn.textContent = 'Initialize & Join';
             leaveBtn.disabled = true;
-            botInfo.style.display = 'none';
-            userNameEl.textContent = '-';
-            gameNameEl.textContent = '-';
+            botStats.classList.remove('active');
+        }
+
+        cookieInput.addEventListener('input', () => {
+            cookieInput.classList.remove('error');
+            $('cookieErr').classList.remove('show');
+        });
+
+        psInput.addEventListener('input', () => {
+            psInput.classList.remove('error');
+            $('linkErr').classList.remove('show');
         });
 
         window.addEventListener('beforeunload', () => {
