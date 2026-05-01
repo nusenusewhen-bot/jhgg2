@@ -3,186 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox Cookie Bot | Railway Deploy</title>
+    <title>Roblox Persistent Bot | Railway Deploy</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0f0f1a;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: #fff;
+            color: #e0e0ff;
         }
         .container {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 40px;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 16px;
+            padding: 32px;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
         }
         h1 {
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 28px;
-            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            font-size: 24px;
+            margin-bottom: 4px;
+            background: linear-gradient(90deg, #00d4ff, #b829dd);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .subtitle {
             text-align: center;
-            color: #8892b0;
-            margin-bottom: 30px;
-            font-size: 14px;
+            color: #6b6b8d;
+            font-size: 13px;
+            margin-bottom: 24px;
         }
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         label {
             display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
+            margin-bottom: 6px;
+            font-size: 12px;
             font-weight: 600;
-            color: #ccd6f6;
+            color: #a0a0c0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         input, textarea {
             width: 100%;
-            padding: 14px 16px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            font-family: 'Courier New', monospace;
+            padding: 12px 14px;
+            background: #0f0f1a;
+            border: 2px solid #2a2a4a;
+            border-radius: 10px;
+            color: #e0e0ff;
+            font-size: 14px;
+            transition: all 0.2s;
+            font-family: 'SF Mono', Monaco, monospace;
         }
         input:focus, textarea:focus {
             outline: none;
             border-color: #00d4ff;
-            background: rgba(0, 0, 0, 0.3);
+        }
+        .input-error {
+            border-color: #ff3366 !important;
+        }
+        .error-text {
+            color: #ff3366;
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+        }
+        .error-text.visible {
+            display: block;
         }
         textarea {
-            min-height: 120px;
+            min-height: 100px;
             resize: vertical;
         }
-        .input-hint {
-            font-size: 12px;
-            color: #8892b0;
-            margin-top: 6px;
-        }
-        button {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .status {
-            margin-top: 20px;
-            padding: 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            display: none;
-        }
-        .status.success {
-            display: block;
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            color: #00ff88;
-        }
-        .status.error {
-            display: block;
-            background: rgba(255, 0, 85, 0.1);
-            border: 1px solid rgba(255, 0, 85, 0.3);
-            color: #ff0055;
-        }
-        .status.loading {
-            display: block;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            color: #00d4ff;
-        }
-        .log-output {
-            margin-top: 20px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            padding: 16px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
-        .log-output.active {
-            display: block;
-        }
-        .log-line {
-            margin: 4px 0;
-            color: #8892b0;
-        }
-        .log-line.success { color: #00ff88; }
-        .log-line.error { color: #ff0055; }
-        .log-line.info { color: #00d4ff; }
-        
-        .features {
+        .btn-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 25px;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ff3366, #cc0055);
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(255, 51, 102, 0.3);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .status-panel {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 10px;
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            display: none;
+        }
+        .status-panel.active {
+            display: block;
+        }
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #444;
+        }
+        .status-dot.connected { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+        .status-dot.error { background: #ff3366; box-shadow: 0 0 8px #ff3366; }
+        .status-dot.processing { background: #ffaa00; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .log-container {
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #1a1a2e;
+            color: #8892b0;
+        }
+        .log-entry.success { color: #00ff88; }
+        .log-entry.error { color: #ff3366; }
+        .log-entry.info { color: #00d4ff; }
+        .log-entry.status { color: #ffaa00; }
+        .bot-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #0f0f1a;
+            border-radius: 8px;
+        }
+        .info-item {
+            font-size: 12px;
+        }
+        .info-label {
+            color: #6b6b8d;
+            margin-bottom: 2px;
+        }
+        .info-value {
+            color: #e0e0ff;
+            font-weight: 600;
+        }
+        .features {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
         }
         .feature-tag {
-            background: rgba(0, 212, 255, 0.1);
+            background: rgba(0, 212, 255, 0.08);
             border: 1px solid rgba(0, 212, 255, 0.2);
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 20px;
             font-size: 11px;
-            text-align: center;
             color: #00d4ff;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Roblox Cookie Bot</h1>
-        <p class="subtitle">Advanced Authentication & Private Server Joiner</p>
+        <h1>Roblox Persistent Bot</h1>
+        <p class="subtitle">WebSocket Presence | Manual Leave Control | Railway Ready</p>
         
         <div class="features">
-            <div class="feature-tag">CSRF Token Handling</div>
-            <div class="feature-tag">Super Properties</div>
-            <div class="feature-tag">User-Agent Rotation</div>
-            <div class="feature-tag">Railway Ready</div>
+            <div class="feature-tag">Real-time Validation</div>
+            <div class="feature-tag">WebSocket Presence</div>
+            <div class="feature-tag">Stay Until Leave</div>
+            <div class="feature-tag">CSRF Auto-Retry</div>
         </div>
 
-        <form id="botForm">
+        <form id="botForm" novalidate>
             <div class="form-group">
                 <label for="cookie">Roblox Cookie (.ROBLOSECURITY)</label>
                 <textarea 
                     id="cookie" 
-                    placeholder="Paste your full .ROBLOSECURITY cookie here..."
-                    required
+                    placeholder="Paste your .ROBLOSECURITY cookie here (min 100 chars)..."
                 ></textarea>
-                <p class="input-hint">Must be valid, active session cookie (100+ chars)</p>
+                <div class="error-text" id="cookieError">Cookie must be at least 100 characters and contain valid base64 format</div>
             </div>
 
             <div class="form-group">
@@ -190,94 +229,232 @@
                 <input 
                     type="url" 
                     id="privateServer" 
-                    placeholder="https://www.roblox.com/games/123456789/GameName?privateServerLinkCode=..."
-                    required
+                    placeholder="https://www.roblox.com/games/123456789/...?privateServerLinkCode=..."
                 >
-                <p class="input-hint">Full Roblox private server invitation URL</p>
+                <div class="error-text" id="linkError">Must be a valid Roblox private server URL</div>
             </div>
 
-            <button type="submit" id="submitBtn">
-                Initialize Bot & Join Server
-            </button>
+            <div class="btn-group">
+                <button type="submit" class="btn-primary" id="startBtn">
+                    Initialize & Join
+                </button>
+                <button type="button" class="btn-danger" id="leaveBtn" disabled>
+                    Leave Server
+                </button>
+            </div>
         </form>
 
-        <div id="status" class="status"></div>
-        <div id="logs" class="log-output"></div>
+        <div class="status-panel" id="statusPanel">
+            <div class="status-header">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <div class="bot-info" id="botInfo" style="display:none;">
+                <div class="info-item">
+                    <div class="info-label">User</div>
+                    <div class="info-value" id="userName">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Game</div>
+                    <div class="info-value" id="gameName">-</div>
+                </div>
+            </div>
+            <div class="log-container" id="logs"></div>
+        </div>
     </div>
 
     <script>
         const form = document.getElementById('botForm');
-        const statusDiv = document.getElementById('status');
-        const logsDiv = document.getElementById('logs');
-        const submitBtn = document.getElementById('submitBtn');
+        const cookieInput = document.getElementById('cookie');
+        const linkInput = document.getElementById('privateServer');
+        const cookieError = document.getElementById('cookieError');
+        const linkError = document.getElementById('linkError');
+        const startBtn = document.getElementById('startBtn');
+        const leaveBtn = document.getElementById('leaveBtn');
+        const statusPanel = document.getElementById('statusPanel');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const logs = document.getElementById('logs');
+        const botInfo = document.getElementById('botInfo');
+        const userNameEl = document.getElementById('userName');
+        const gameNameEl = document.getElementById('gameName');
+
+        let ws = null;
+        let isBotActive = false;
+
+        function validateCookie(value) {
+            const trimmed = value.trim();
+            return trimmed.length >= 100 && /^[A-Za-z0-9+/=]+$/.test(trimmed);
+        }
+
+        function validateLink(value) {
+            const trimmed = value.trim();
+            try {
+                const url = new URL(trimmed);
+                return url.hostname.includes('roblox.com') && 
+                       (trimmed.includes('privateServer') || trimmed.includes('privateServerLinkCode'));
+            } catch {
+                return false;
+            }
+        }
+
+        function showFieldError(input, errorEl, show) {
+            if (show) {
+                input.classList.add('input-error');
+                errorEl.classList.add('visible');
+            } else {
+                input.classList.remove('input-error');
+                errorEl.classList.remove('visible');
+            }
+        }
 
         function addLog(message, type = 'info') {
-            const line = document.createElement('div');
-            line.className = `log-line ${type}`;
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logsDiv.appendChild(line);
-            logsDiv.scrollTop = logsDiv.scrollHeight;
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
         }
 
-        function showStatus(message, type) {
-            statusDiv.className = `status ${type}`;
-            statusDiv.textContent = message;
+        function setStatus(state, text) {
+            statusDot.className = 'status-dot ' + state;
+            statusText.textContent = text;
+            statusPanel.classList.add('active');
         }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const cookie = document.getElementById('cookie').value.trim();
-            const privateServerLink = document.getElementById('privateServer').value.trim();
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Processing...';
-            logsDiv.classList.add('active');
-            logsDiv.innerHTML = '';
-            statusDiv.className = 'status';
+            ws.onopen = () => {
+                setStatus('connected', 'WebSocket Connected');
+                addLog('WebSocket connection established', 'success');
+            };
 
-            addLog('Initializing bot sequence...', 'info');
-            addLog('Validating cookie format...', 'info');
-
-            try {
-                addLog('Sending authentication request to API...', 'info');
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
                 
-                const response = await fetch('/api/authenticate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        cookie,
-                        privateServerLink
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    addLog(`Authenticated as: ${data.user.name} (ID: ${data.user.id})`, 'success');
-                    addLog(`Target game: ${data.game.name} (Place ID: ${data.game.placeId})`, 'info');
-                    addLog('Join request initiated successfully', 'success');
-                    addLog(`Server response: ${JSON.stringify(data.serverDetails, null, 2)}`, 'info');
-                    
-                    showStatus(
-                        `Success! Bot logged in as ${data.user.name} and joined ${data.game.name}`, 
-                        'success'
-                    );
-                } else {
-                    addLog(`Error: ${data.error}`, 'error');
-                    if (data.details) addLog(`Details: ${data.details}`, 'error');
-                    showStatus(data.error || 'Authentication failed', 'error');
+                switch(data.type) {
+                    case 'connected':
+                        addLog(`Bot ID assigned: ${data.botId}`, 'info');
+                        break;
+                    case 'status':
+                        setStatus('processing', data.message);
+                        addLog(data.message, 'status');
+                        break;
+                    case 'success':
+                        setStatus('connected', 'Bot Active in Game');
+                        addLog(data.message, 'success');
+                        if (data.data) {
+                            addLog(`Server response: ${JSON.stringify(data.data)}`, 'info');
+                        }
+                        break;
+                    case 'error':
+                        setStatus('error', 'Error Occurred');
+                        addLog(data.message, 'error');
+                        break;
+                    case 'presence':
+                        addLog(data.message, 'info');
+                        break;
                 }
 
-            } catch (error) {
-                addLog(`Network/Runtime Error: ${error.message}`, 'error');
-                showStatus('Connection failed. Check server status.', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Initialize Bot & Join Server';
+                if (data.message && data.message.includes('Authenticated as')) {
+                    const match = data.message.match(/Authenticated as (.+)/);
+                    if (match) {
+                        userNameEl.textContent = match[1];
+                        botInfo.style.display = 'grid';
+                    }
+                }
+                
+                if (data.message && data.message.includes('Game:')) {
+                    const match = data.message.match(/Game: (.+)/);
+                    if (match) {
+                        gameNameEl.textContent = match[1];
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                setStatus('error', 'Connection Error');
+                addLog('WebSocket error occurred', 'error');
+            };
+
+            ws.onclose = () => {
+                setStatus('error', 'Disconnected');
+                addLog('WebSocket connection closed', 'error');
+                isBotActive = false;
+                startBtn.disabled = false;
+                leaveBtn.disabled = true;
+                startBtn.textContent = 'Initialize & Join';
+            };
+        }
+
+        cookieInput.addEventListener('input', () => {
+            showFieldError(cookieInput, cookieError, false);
+        });
+
+        linkInput.addEventListener('input', () => {
+            showFieldError(linkInput, linkError, false);
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const cookie = cookieInput.value.trim();
+            const link = linkInput.value.trim();
+            
+            let hasError = false;
+
+            if (!validateCookie(cookie)) {
+                showFieldError(cookieInput, cookieError, true);
+                hasError = true;
             }
+
+            if (!validateLink(link)) {
+                showFieldError(linkInput, linkError, true);
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                connectWebSocket();
+            }
+
+            logs.innerHTML = '';
+            statusPanel.classList.add('active');
+            
+            setTimeout(() => {
+                ws.send(JSON.stringify({
+                    action: 'start',
+                    cookie,
+                    privateServerLink: link
+                }));
+            }, 500);
+
+            isBotActive = true;
+            startBtn.disabled = true;
+            startBtn.textContent = 'Bot Running...';
+            leaveBtn.disabled = false;
+        });
+
+        leaveBtn.addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ action: 'leave' }));
+                addLog('Sending leave command...', 'status');
+            }
+            
+            isBotActive = false;
+            startBtn.disabled = false;
+            startBtn.textContent = 'Initialize & Join';
+            leaveBtn.disabled = true;
+            botInfo.style.display = 'none';
+            userNameEl.textContent = '-';
+            gameNameEl.textContent = '-';
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (ws) ws.close();
         });
     </script>
 </body>
