@@ -3,453 +3,543 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox Bot Controller</title>
+    <title>Roblox Bot Controller v4</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0f;
+            background: #050508;
             color: #e0e0ff;
             min-height: 100vh;
+            padding: 20px;
+        }
+        .wrap {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .topbar {
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 40px 20px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #1a1a2e;
         }
-        .main {
-            width: 100%;
-            max-width: 560px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-        .header h1 {
-            font-size: 26px;
+        .brand {
+            font-size: 22px;
+            font-weight: 800;
             background: linear-gradient(90deg, #00d4ff, #b829dd);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
         }
-        .header p {
-            color: #6b6b8d;
-            font-size: 13px;
+        .conn-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .conn-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff3366;
+            transition: background 0.3s;
+        }
+        .conn-dot.on {
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
+        .conn-dot.trying {
+            background: #ffaa00;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
         .card {
-            background: #141428;
-            border: 1px solid #2a2a4a;
-            border-radius: 14px;
-            padding: 24px;
+            background: #0f0f1a;
+            border: 1px solid #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 16px;
         }
-        .input-group {
-            margin-bottom: 18px;
+        .input-block {
+            margin-bottom: 16px;
         }
-        .input-group:last-child {
+        .input-block:last-child {
             margin-bottom: 0;
         }
         label {
             display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: #a0a0c0;
+            font-size: 11px;
+            font-weight: 700;
+            color: #6b6b8d;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
             margin-bottom: 6px;
         }
         input, textarea {
             width: 100%;
-            padding: 12px 14px;
-            background: #0a0a0f;
-            border: 2px solid #2a2a4a;
-            border-radius: 10px;
+            padding: 12px;
+            background: #050508;
+            border: 2px solid #1a1a2e;
+            border-radius: 8px;
             color: #e0e0ff;
-            font-size: 14px;
+            font-size: 13px;
             font-family: 'SF Mono', Monaco, monospace;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
         }
         input:focus, textarea:focus {
             outline: none;
             border-color: #00d4ff;
         }
-        input.error, textarea.error {
+        input.bad, textarea.bad {
             border-color: #ff3366;
             animation: shake 0.4s;
         }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            75% { transform: translateX(6px); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
-        .error-msg {
+        .err {
             color: #ff3366;
             font-size: 12px;
             margin-top: 6px;
             display: none;
         }
-        .error-msg.show {
+        .err.show {
             display: block;
         }
         .hint {
-            color: #6b6b8d;
-            font-size: 12px;
+            color: #4a4a6a;
+            font-size: 11px;
             margin-top: 6px;
         }
-        .actions {
+        .btns {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 8px;
+            gap: 10px;
         }
         button {
             padding: 14px;
             border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 700;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.2s;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .btn-start {
+        .btn-go {
             background: linear-gradient(135deg, #00d4ff, #0066ff);
             color: white;
         }
-        .btn-start:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.25);
+        .btn-go:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.2);
         }
-        .btn-leave {
-            background: linear-gradient(135deg, #ff3366, #cc0055);
+        .btn-stop {
+            background: linear-gradient(135deg, #ff3366, #aa0033);
             color: white;
         }
-        .btn-leave:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(255, 51, 102, 0.25);
+        .btn-stop:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 51, 102, 0.2);
         }
         button:disabled {
-            opacity: 0.4;
+            opacity: 0.3;
             cursor: not-allowed;
-            transform: none !important;
         }
-        .console {
-            background: #0a0a0f;
-            border: 1px solid #2a2a4a;
-            border-radius: 10px;
-            padding: 16px;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-size: 12px;
-            line-height: 1.7;
-            max-height: 320px;
-            overflow-y: auto;
+        .status-area {
             display: none;
         }
-        .console.active {
+        .status-area.open {
             display: block;
         }
-        .console-line {
-            padding: 2px 0;
-            border-bottom: 1px solid #1a1a2e;
-            color: #8892b0;
-        }
-        .console-line.success { color: #00ff88; }
-        .console-line.error { color: #ff3366; }
-        .console-line.status { color: #ffaa00; }
-        .console-line.info { color: #00d4ff; }
-        .status-bar {
+        .status-pill {
             display: flex;
             align-items: center;
             gap: 10px;
             padding: 12px 16px;
-            background: #0a0a0f;
-            border-radius: 10px;
+            background: #050508;
+            border-radius: 8px;
             margin-bottom: 12px;
-            display: none;
         }
-        .status-bar.active {
-            display: flex;
-        }
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .pill-dot {
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: #444;
             flex-shrink: 0;
         }
-        .status-dot.green { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
-        .status-dot.red { background: #ff3366; box-shadow: 0 0 6px #ff3366; }
-        .status-dot.yellow { background: #ffaa00; animation: blink 1s infinite; }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .pill-dot.idle { background: #444; }
+        .pill-dot.work { background: #ffaa00; animation: blink 1s infinite; }
+        .pill-dot.ok { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .pill-dot.fail { background: #ff3366; box-shadow: 0 0 10px #ff3366; }
+        .pill-text {
+            font-size: 14px;
+            font-weight: 700;
         }
-        .status-text {
-            font-size: 13px;
-            font-weight: 600;
-            color: #e0e0ff;
-        }
-        .bot-stats {
+        .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 10px;
             margin-bottom: 12px;
             display: none;
         }
-        .bot-stats.active {
+        .stats-grid.on {
             display: grid;
         }
-        .stat-box {
-            background: #0a0a0f;
+        .stat {
+            background: #050508;
             padding: 12px;
             border-radius: 8px;
         }
-        .stat-label {
-            font-size: 11px;
-            color: #6b6b8d;
+        .stat-key {
+            font-size: 10px;
+            color: #4a4a6a;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 4px;
         }
-        .stat-value {
+        .stat-val {
             font-size: 14px;
             font-weight: 700;
             color: #e0e0ff;
             word-break: break-all;
         }
-        .connection-status {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            background: #1a1a2e;
-            border: 1px solid #2a2a4a;
+        .debug-panel {
+            background: #050508;
+            border: 1px solid #1a1a2e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .debug-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 6px;
+            padding: 10px 14px;
+            background: #0a0a12;
+            border-bottom: 1px solid #1a1a2e;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6b6b8d;
         }
-        .conn-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #ff3366;
+        .debug-header button {
+            padding: 4px 10px;
+            font-size: 11px;
+            background: #1a1a2e;
+            color: #8892b0;
         }
-        .conn-dot.online {
-            background: #00ff88;
-            box-shadow: 0 0 4px #00ff88;
+        .debug-body {
+            padding: 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .debug-line {
+            padding: 2px 0;
+            border-bottom: 1px solid #0f0f1a;
+            color: #6b6b8d;
+        }
+        .debug-line.s { color: #00ff88; }
+        .debug-line.e { color: #ff3366; }
+        .debug-line.w { color: #ffaa00; }
+        .debug-line.i { color: #00d4ff; }
+        .empty-state {
+            text-align: center;
+            color: #4a4a6a;
+            padding: 40px;
+            font-style: italic;
+        }
+        .log-link {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+        .log-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="main">
-        <div class="connection-status" id="connStatus">
-            <div class="conn-dot" id="connDot"></div>
-            <span id="connText">Disconnected</span>
-        </div>
-
-        <div class="header">
-            <h1>Roblox Bot Controller</h1>
-            <p>WebSocket Control | No Refresh | Persistent Presence</p>
+    <div class="wrap">
+        <div class="topbar">
+            <div class="brand">Roblox Bot Controller</div>
+            <div class="conn-badge">
+                <div class="conn-dot" id="cDot"></div>
+                <span id="cText">Disconnected</span>
+            </div>
         </div>
 
         <div class="card">
-            <div class="input-group">
-                <label for="cookie">Cookie (.ROBLOSECURITY)</label>
-                <textarea id="cookie" rows="4" placeholder="Paste cookie here..."></textarea>
-                <div class="error-msg" id="cookieErr">Invalid: Must be 100+ characters, base64 format</div>
-                <div class="hint">Min 100 chars, alphanumeric + / = only</div>
+            <div class="input-block">
+                <label>Cookie (.ROBLOSECURITY)</label>
+                <textarea id="inCookie" rows="3" placeholder="Paste your cookie here..."></textarea>
+                <div class="err" id="eCookie">Invalid: Must be 100+ chars, base64 characters only</div>
+                <div class="hint">Example: _|WARNING:-DO-NOT-SHARE-THIS...</div>
             </div>
 
-            <div class="input-group">
-                <label for="psLink">Private Server Link</label>
-                <input type="text" id="psLink" placeholder="https://www.roblox.com/games/...?privateServerLinkCode=...">
-                <div class="error-msg" id="linkErr">Invalid: Must be roblox.com URL with privateServerLinkCode</div>
-                <div class="hint">Full Roblox private server invitation URL</div>
+            <div class="input-block">
+                <label>Private Server Link</label>
+                <input type="text" id="inLink" placeholder="https://www.roblox.com/games/...?privateServerLinkCode=...">
+                <div class="err" id="eLink">Invalid: Must be roblox.com URL containing privateServerLinkCode</div>
+                <div class="hint">Full invitation URL from Roblox private server</div>
             </div>
 
-            <div class="actions">
-                <button class="btn-start" id="startBtn" onclick="handleStart()">Initialize & Join</button>
-                <button class="btn-leave" id="leaveBtn" onclick="handleLeave()" disabled>Leave Server</button>
+            <div class="btns">
+                <button class="btn-go" id="bStart" onclick="doStart()">Initialize & Join</button>
+                <button class="btn-stop" id="bLeave" onclick="doLeave()" disabled>Leave Server</button>
             </div>
         </div>
 
-        <div class="card" id="statusCard" style="display:none;">
-            <div class="status-bar" id="statusBar">
-                <div class="status-dot" id="statusDot"></div>
-                <div class="status-text" id="statusText">Ready</div>
-            </div>
-
-            <div class="bot-stats" id="botStats">
-                <div class="stat-box">
-                    <div class="stat-label">User</div>
-                    <div class="stat-value" id="statUser">-</div>
+        <div class="status-area" id="sArea">
+            <div class="card">
+                <div class="status-pill" id="sPill">
+                    <div class="pill-dot idle" id="pDot"></div>
+                    <div class="pill-text" id="pText">Ready to initialize</div>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-label">Game</div>
-                    <div class="stat-value" id="statGame">-</div>
+
+                <div class="stats-grid" id="sGrid">
+                    <div class="stat">
+                        <div class="stat-key">Authenticated User</div>
+                        <div class="stat-val" id="vUser">-</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-key">Target Game</div>
+                        <div class="stat-val" id="vGame">-</div>
+                    </div>
+                </div>
+
+                <div class="debug-panel">
+                    <div class="debug-header">
+                        <span>Event Log</span>
+                        <div>
+                            <button onclick="clearLog()">Clear</button>
+                            <a class="log-link" href="/api/logs" target="_blank">View Server Logs</a>
+                        </div>
+                    </div>
+                    <div class="debug-body" id="dBody">
+                        <div class="empty-state">Click "Initialize & Join" to start logging</div>
+                    </div>
                 </div>
             </div>
-
-            <div class="console" id="console"></div>
         </div>
     </div>
 
     <script>
         let ws = null;
-        let isRunning = false;
+        let connected = false;
 
         const $ = id => document.getElementById(id);
-        const cookieInput = $('cookie');
-        const psInput = $('psLink');
-        const startBtn = $('startBtn');
-        const leaveBtn = $('leaveBtn');
-        const statusCard = $('statusCard');
-        const statusBar = $('statusBar');
-        const statusDot = $('statusDot');
-        const statusText = $('statusText');
-        const botStats = $('botStats');
-        const statUser = $('statUser');
-        const statGame = $('statGame');
-        const consoleEl = $('console');
-        const connDot = $('connDot');
-        const connText = $('connText');
+
+        function setConn(state) {
+            const dot = $('cDot');
+            const txt = $('cText');
+            dot.className = 'conn-dot';
+            
+            if (state === 'on') {
+                dot.classList.add('on');
+                txt.textContent = 'WebSocket Online';
+                connected = true;
+            } else if (state === 'trying') {
+                dot.classList.add('trying');
+                txt.textContent = 'Connecting...';
+                connected = false;
+            } else {
+                txt.textContent = 'Disconnected';
+                connected = false;
+            }
+        }
+
+        function setPill(state, text) {
+            const dot = $('pDot');
+            const txt = $('pText');
+            dot.className = 'pill-dot ' + state;
+            txt.textContent = text;
+            $('sArea').classList.add('open');
+        }
+
+        function addLog(msg, type = 'n') {
+            const body = $('dBody');
+            if (body.querySelector('.empty-state')) {
+                body.innerHTML = '';
+            }
+            
+            const line = document.createElement('div');
+            line.className = 'debug-line ' + type;
+            
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            line.textContent = `[${time}] ${msg}`;
+            
+            body.appendChild(line);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function clearLog() {
+            $('dBody').innerHTML = '<div class="empty-state">Log cleared. Waiting for events...</div>';
+        }
 
         function validate() {
             let ok = true;
-            
-            const cookie = cookieInput.value.trim();
+            const cookie = $('inCookie').value.trim();
+            const link = $('inLink').value.trim();
+
             if (!cookie || cookie.length < 100 || !/^[A-Za-z0-9+/=]+$/.test(cookie)) {
-                cookieInput.classList.add('error');
-                $('cookieErr').classList.add('show');
+                $('inCookie').classList.add('bad');
+                $('eCookie').classList.add('show');
                 ok = false;
             } else {
-                cookieInput.classList.remove('error');
-                $('cookieErr').classList.remove('show');
+                $('inCookie').classList.remove('bad');
+                $('eCookie').classList.remove('show');
             }
 
-            const link = psInput.value.trim();
             try {
                 const url = new URL(link);
                 if (!url.hostname.includes('roblox.com') || !link.includes('privateServer')) {
                     throw new Error();
                 }
-                psInput.classList.remove('error');
-                $('linkErr').classList.remove('show');
+                $('inLink').classList.remove('bad');
+                $('eLink').classList.remove('show');
             } catch {
-                psInput.classList.add('error');
-                $('linkErr').classList.add('show');
+                $('inLink').classList.add('bad');
+                $('eLink').classList.add('show');
                 ok = false;
             }
 
             return ok ? { cookie, link } : null;
         }
 
-        function setStatus(state, text) {
-            statusBar.classList.add('active');
-            statusDot.className = 'status-dot ' + state;
-            statusText.textContent = text;
-            statusCard.style.display = 'block';
-        }
-
-        function log(msg, type = 'info') {
-            consoleEl.classList.add('active');
-            const line = document.createElement('div');
-            line.className = `console-line ${type}`;
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            consoleEl.appendChild(line);
-            consoleEl.scrollTop = consoleEl.scrollHeight;
-        }
-
         function connectWS() {
-            if (ws && ws.readyState === WebSocket.OPEN) return;
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                addLog('WebSocket already active', 'i');
+                return;
+            }
+
+            setConn('trying');
+            addLog('Opening WebSocket connection...', 'i');
 
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+            const url = `${protocol}//${window.location.host}/ws`;
+            
+            addLog(`Connecting to ${url}`, 'i');
 
-            ws.onopen = () => {
-                connDot.classList.add('online');
-                connText.textContent = 'WebSocket Online';
-                log('WebSocket connected', 'success');
-            };
+            try {
+                ws = new WebSocket(url);
 
-            ws.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                
-                switch(data.type) {
-                    case 'connected':
-                        log(`Session ID: ${data.botId}`, 'info');
-                        break;
-                    case 'status':
-                        setStatus('yellow', data.message);
-                        log(data.message, 'status');
-                        if (data.message.includes('Authenticated as')) {
+                ws.onopen = () => {
+                    setConn('on');
+                    addLog('WebSocket connected successfully', 's');
+                };
+
+                ws.onmessage = (e) => {
+                    let data;
+                    try {
+                        data = JSON.parse(e.data);
+                    } catch (err) {
+                        addLog(`Malformed message: ${e.data}`, 'e');
+                        return;
+                    }
+
+                    addLog(`Server: [${data.type}] ${data.message}`, 'i');
+
+                    if (data.type === 'connected') {
+                        addLog(`Assigned Bot ID: ${data.botId}`, 's');
+                    }
+                    
+                    if (data.type === 'status') {
+                        setPill('work', data.message);
+                        if (data.message.includes('Logged in as')) {
                             const name = data.message.match(/as (.+)/)?.[1];
                             if (name) {
-                                statUser.textContent = name;
-                                botStats.classList.add('active');
+                                $('vUser').textContent = name;
+                                $('sGrid').classList.add('on');
                             }
                         }
                         if (data.message.includes('Target:')) {
                             const game = data.message.match(/Target: (.+)/)?.[1];
-                            if (game) {
-                                statGame.textContent = game;
-                            }
+                            if (game) $('vGame').textContent = game;
                         }
-                        break;
-                    case 'success':
-                        setStatus('green', 'Bot Active in Game');
-                        log(data.message, 'success');
-                        isRunning = true;
-                        startBtn.disabled = true;
-                        startBtn.textContent = 'Running...';
-                        leaveBtn.disabled = false;
-                        break;
-                    case 'error':
-                        setStatus('red', 'Error');
-                        log(data.message, 'error');
-                        startBtn.disabled = false;
-                        startBtn.textContent = 'Initialize & Join';
-                        leaveBtn.disabled = true;
-                        break;
-                    case 'presence':
-                        log(data.message, 'info');
-                        break;
-                }
-            };
+                    }
+                    
+                    if (data.type === 'success') {
+                        setPill('ok', data.message);
+                        addLog('Bot is now active in game', 's');
+                        $('bStart').disabled = true;
+                        $('bStart').textContent = 'Running';
+                        $('bLeave').disabled = false;
+                    }
+                    
+                    if (data.type === 'error') {
+                        setPill('fail', 'Error: ' + data.message);
+                        addLog(data.message, 'e');
+                        $('bStart').disabled = false;
+                        $('bStart').textContent = 'Initialize & Join';
+                        $('bLeave').disabled = true;
+                    }
+                    
+                    if (data.type === 'presence') {
+                        addLog(data.message, 'i');
+                    }
+                };
 
-            ws.onerror = () => {
-                connDot.classList.remove('online');
-                connText.textContent = 'Connection Error';
-                log('WebSocket error', 'error');
-            };
+                ws.onerror = (e) => {
+                    addLog(`WebSocket error occurred`, 'e');
+                    setConn('off');
+                };
 
-            ws.onclose = () => {
-                connDot.classList.remove('online');
-                connText.textContent = 'Disconnected';
-                log('WebSocket closed', 'error');
-                isRunning = false;
-                startBtn.disabled = false;
-                startBtn.textContent = 'Initialize & Join';
-                leaveBtn.disabled = true;
-                setStatus('red', 'Disconnected');
-            };
+                ws.onclose = (e) => {
+                    addLog(`WebSocket closed (code: ${e.code}, clean: ${e.wasClean})`, e.wasClean ? 'i' : 'e');
+                    setConn('off');
+                    $('bStart').disabled = false;
+                    $('bStart').textContent = 'Initialize & Join';
+                    $('bLeave').disabled = true;
+                    setPill('fail', 'Connection lost');
+                };
+
+            } catch (err) {
+                addLog(`Failed to create WebSocket: ${err.message}`, 'e');
+                setConn('off');
+            }
         }
 
-        function handleStart() {
+        function doStart() {
+            addLog('=== START BUTTON CLICKED ===', 'w');
+            
             const data = validate();
-            if (!data) return;
+            if (!data) {
+                addLog('Validation failed - check inputs', 'e');
+                return;
+            }
+
+            addLog('Inputs validated successfully', 's');
+            addLog('Cookie length: ' + data.cookie.length, 'i');
+            addLog('Link: ' + data.link.substring(0, 50) + '...', 'i');
 
             connectWS();
 
-            setTimeout(() => {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    consoleEl.innerHTML = '';
-                    statusCard.style.display = 'block';
-                    botStats.classList.remove('active');
-                    statUser.textContent = '-';
-                    statGame.textContent = '-';
+            const waitAndSend = () => {
+                if (!ws) {
+                    addLog('WebSocket not created yet, waiting...', 'w');
+                    setTimeout(waitAndSend, 200);
+                    return;
+                }
+
+                if (ws.readyState === WebSocket.OPEN) {
+                    addLog('Sending start command to server...', 'i');
+                    clearLog();
+                    $('sGrid').classList.remove('on');
+                    $('vUser').textContent = '-';
+                    $('vGame').textContent = '-';
                     
                     ws.send(JSON.stringify({
                         action: 'start',
@@ -457,41 +547,53 @@
                         privateServerLink: data.link
                     }));
                     
-                    startBtn.disabled = true;
-                    startBtn.textContent = 'Connecting...';
+                    $('bStart').disabled = true;
+                    $('bStart').textContent = 'Initializing...';
+                    addLog('Start command sent, waiting for server...', 'w');
+                } else if (ws.readyState === WebSocket.CONNECTING) {
+                    addLog('WebSocket still connecting, retrying in 300ms...', 'w');
+                    setTimeout(waitAndSend, 300);
                 } else {
-                    log('WebSocket not ready. Retrying...', 'error');
-                    setTimeout(handleStart, 500);
+                    addLog(`WebSocket in bad state: ${ws.readyState}, reconnecting...`, 'e');
+                    connectWS();
+                    setTimeout(waitAndSend, 500);
                 }
-            }, 300);
+            };
+
+            setTimeout(waitAndSend, 300);
         }
 
-        function handleLeave() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ action: 'leave' }));
-                log('Sending leave command...', 'status');
-            }
+        function doLeave() {
+            addLog('=== LEAVE BUTTON CLICKED ===', 'w');
             
-            isRunning = false;
-            startBtn.disabled = false;
-            startBtn.textContent = 'Initialize & Join';
-            leaveBtn.disabled = true;
-            botStats.classList.remove('active');
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addLog('Sending leave command...', 'i');
+                ws.send(JSON.stringify({ action: 'leave' }));
+            } else {
+                addLog('No active WebSocket to send leave command', 'e');
+            }
+
+            $('bStart').disabled = false;
+            $('bStart').textContent = 'Initialize & Join';
+            $('bLeave').disabled = true;
+            $('sGrid').classList.remove('on');
         }
 
-        cookieInput.addEventListener('input', () => {
-            cookieInput.classList.remove('error');
-            $('cookieErr').classList.remove('show');
+        $('inCookie').addEventListener('input', () => {
+            $('inCookie').classList.remove('bad');
+            $('eCookie').classList.remove('show');
         });
 
-        psInput.addEventListener('input', () => {
-            psInput.classList.remove('error');
-            $('linkErr').classList.remove('show');
+        $('inLink').addEventListener('input', () => {
+            $('inLink').classList.remove('bad');
+            $('eLink').classList.remove('show');
         });
 
         window.addEventListener('beforeunload', () => {
             if (ws) ws.close();
         });
+
+        addLog('Page loaded. Ready to initialize.', 'i');
     </script>
 </body>
 </html>
