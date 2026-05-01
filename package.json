@@ -1,7 +1,7 @@
 {
-  "name": "roblox-cookie-bot",
-  "version": "1.0.0",
-  "description": "Roblox Cookie Authentication & Private Server Joiner",
+  "name": "roblox-persistent-bot",
+  "version": "2.0.0",
+  "description": "Roblox Cookie Bot with WebSocket Presence & Leave Control",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -14,7 +14,8 @@
     "cors": "^2.8.5",
     "helmet": "^7.1.0",
     "uuid": "^9.0.1",
-    "user-agents": "^1.1.144"
+    "user-agents": "^1.1.144",
+    "ws": "^8.14.2"
   },
   "engines": {
     "node": ">=18.0.0"
